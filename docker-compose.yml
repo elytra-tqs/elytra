@@ -1,0 +1,14 @@
+services:
+  stations-management:
+    container_name: stations-management
+    build:
+      context: ./stations-management
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./stations-management:/app
+    environment:
+      - JAVA_OPTS=-Dspring.devtools.restart.enabled=true -Dspring.devtools.livereload.enabled=true
+      - SPRING_PROFILES_ACTIVE=dev
+    restart: unless-stopped
