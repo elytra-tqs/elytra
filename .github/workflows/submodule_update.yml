@@ -3,8 +3,8 @@ on:
   repository_dispatch:
     types: [submodule-updated]
 
-permissions:                     # ← mandatory since GITHUB_TOKEN
-  contents: write                #   is read-only by default
+permissions:
+  contents: write
 
 jobs:
   update-submodule:
@@ -13,9 +13,9 @@ jobs:
       - name: Checkout repo & sub-modules
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.BOT_PAT }}   # 👈 same token
+          token: ${{ secrets.BOT_PAT }}
           fetch-depth: 0
-          submodules: recursive          # pulls private sub-modules too
+          submodules: recursive
 
       - name: Git identity
         run: |
@@ -44,6 +44,6 @@ jobs:
               steps.path.outputs.path }} → ${{ github.event.client_payload.commit_sha }}"
             git push \
               "https://x-access-token:${{ secrets.BOT_PAT }}@github.com/${{ github.repository }}.git" \
-              HEAD:dev           # ← PAT as HTTPS password :contentReference[oaicite:4]{index=4}
+              HEAD:dev
           fi
 
