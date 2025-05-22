@@ -1,3 +1,9 @@
 [submodule "docs"]
 	path = docs
 	url = git@github.com:elytra-tqs/docs.git
+[submodule "stations-management"]
+	path = stations-management
+	url = git@github.com:elytra-tqs/stations-management.git
+[submodule "frontend"]
+	path = frontend
+	url = git@github.com:elytra-tqs/frontend.git
