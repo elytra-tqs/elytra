@@ -1,0 +1,26 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - stations-management
+    networks:
+      - elytra
+
+  stations-management:
+    container_name: stations-management
+    build:
+      context: ./stations-management
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: unless-stopped
+    networks:
+      - elytra
+
+networks:
+  elytra:
+    driver: bridge
