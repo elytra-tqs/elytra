@@ -15,9 +15,33 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Make deploy script executable
-        run: chmod +x deploy.sh
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
 
-      - name: Run deployment script
-        run: ./deploy.sh
+      - name: Add VM to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VM
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+            cd ${{ secrets.VM_DEPLOY_PATH }}
+            git pull origin main
+            git submodule update --init --recursive
+            chmod +x deploy.sh
+            ./deploy.sh
+          EOF
+
+      - name: Run Health Check
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+            cd ${{ secrets.VM_DEPLOY_PATH }}
+            chmod +x health-check.sh
+            ./health-check.sh
+          EOF
