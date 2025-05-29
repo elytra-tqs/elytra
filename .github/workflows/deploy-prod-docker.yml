@@ -15,16 +15,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Make deploy script executable
         run: chmod +x deploy.sh
 
       - name: Run deployment script
         run: ./deploy.sh
-
-      - name: Cleanup
-        if: always()
-        run: |
-          docker compose -f docker-compose.prod.yml down
