@@ -14,7 +14,7 @@ services:
     container_name: stations-management
     build:
       context: ./stations-management
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     restart: unless-stopped
