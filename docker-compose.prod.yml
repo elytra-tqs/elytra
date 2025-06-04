@@ -8,6 +8,8 @@ services:
     depends_on:
       - stations-management
       - grafana
+      - prometheus
+
     networks:
       - elytra
 
@@ -23,10 +25,10 @@ services:
       - elytra
 
   prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
     ports:
       - "9090:9090"
+    image: prom/prometheus:latest
+    container_name: prometheus
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/prometheus/alert.rules:/etc/prometheus/alert.rules:ro
@@ -57,18 +59,21 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
     environment:
-      - GF_SERVER_ROOT_URL=http://localhost/grafana
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
       - GF_SECURITY_ADMIN_PASSWORD=admin123
+
     networks:
       - elytra
-
+    depends_on:
+      - prometheus
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
@@ -89,9 +94,12 @@ services:
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
-    container_name: cadvisor
     ports:
       - "8085:8080"
+    container_name: cadvisor
+    command:
+      - "--whitelisted_container_labels=com.docker.compose.service"
+      - "--store_container_labels=false"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
