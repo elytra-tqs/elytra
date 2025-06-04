@@ -1,5 +1,11 @@
 global:
   resolve_timeout: 5m
+  smtp_from: "guilherme.rosa60@gmail.com"
+  smtp_smarthost: "smtp.gmail.com:587"
+  smtp_auth_username: "guilherme.rosa60@gmail.com"
+  smtp_auth_password: "xdri mtxk ztjo xeyu"
+  smtp_auth_identity: "guilherme.rosa60@gmail.com"
+  smtp_require_tls: true
 
 route:
   group_by: ["alertname"]
@@ -7,20 +13,27 @@ route:
   group_interval: 10s
   repeat_interval: 1h
   receiver: "email-notifications"
+  routes:
+    - match:
+        severity: critical
+      receiver: "email-notifications"
+      group_wait: 0s
+      repeat_interval: 5m
 
 receivers:
   - name: "email-notifications"
     email_configs:
-      - to: "your-email@example.com"
-        from: "alertmanager@example.com"
-        smarthost: "smtp.example.com:587"
-        auth_username: "alertmanager@example.com"
-        auth_password: "your-password"
+      - to: "guilherme.rosa60@gmail.com"
         send_resolved: true
-
-inhibit_rules:
-  - source_match:
-      severity: "critical"
-    target_match:
-      severity: "warning"
-    equal: ["alertname", "instance"]
+        headers:
+          subject: "Elytra Alert: {{ .GroupLabels.alertname }}"
+        html: |
+          {{ range .Alerts }}
+          <h2 style="color: {{ if eq .Labels.severity "critical" }}#ff0000{{ else }}#ffa500{{ end }}">
+            Container: {{ .Labels.id }}
+          </h2>
+          <h3>Alert: {{ .Annotations.summary }}</h3>
+          <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+          <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+          <hr>
+          {{ end }}
