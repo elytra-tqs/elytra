@@ -23,3 +23,7 @@ jobs:
 
       - name: Run deployment script
         run: ./deploy.sh
+        env:
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_AUTH_PASSWORD: ${{ secrets.SMTP_AUTH_PASSWORD }}
+          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}

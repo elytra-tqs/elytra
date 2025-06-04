@@ -1,0 +1,43 @@
+groups:
+- name: container_alerts
+  rules:
+  - alert: ContainerDown
+    expr: |
+      sum by(id) (container_memory_usage_bytes{id=~"/docker/.*"}) == 0
+      or
+      absent(container_last_seen{id=~"/docker/.*"}) == 1
+    for: 20s
+    labels:
+      severity: critical
+    annotations:
+      summary: "Container {{ $labels.id }} is down"
+      description: "Container {{ $labels.id }} has been down for more than 20 seconds"
+
+  - alert: ContainerUnhealthy
+    expr: container_memory_usage_bytes{id=~"/docker/.*"} == 0
+    for: 20s
+    labels:
+      severity: warning
+    annotations:
+      summary: "Container {{ $labels.id }} might be unhealthy"
+      description: "Container {{ $labels.id }} shows no memory usage, which might indicate it's unhealthy"
+
+  - alert: ContainerHighMemoryUsage
+    expr: (container_memory_usage_bytes{id=~"/docker/.*"} / container_spec_memory_limit_bytes{id=~"/docker/.*"} * 100) > 90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage in container {{ $labels.id }}"
+      description: "Container {{ $labels.id }} memory usage is above 90%"
+
+  - alert: ContainerHighCPUUsage
+    expr: (rate(container_cpu_usage_seconds_total{id=~"/docker/.*"}[5m]) * 100) > 90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage in container {{ $labels.id }}"
+      description: "Container {{ $labels.id }} CPU usage is above 90%"
+
+ 
