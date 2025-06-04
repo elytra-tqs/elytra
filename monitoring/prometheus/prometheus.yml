@@ -3,11 +3,12 @@ global:
   evaluation_interval: 15s
 
 rule_files:
+  - "alert.rules"
 
 scrape_configs:
   - job_name: "prometheus"
     static_configs:
-      - targets: ["localhost:9090"]
+      - targets: ["prometheus:9090"]
 
   - job_name: "stations-management"
     static_configs:
@@ -15,13 +16,17 @@ scrape_configs:
     metrics_path: "/actuator/prometheus"
     scrape_interval: 5s
 
-  - job_name: "nginx"
-    static_configs:
-      - targets: ["nginx:80"]
-    metrics_path: "/nginx_status"
-    scrape_interval: 5s
-
   - job_name: "node"
     static_configs:
       - targets: ["node-exporter:9100"]
     scrape_interval: 5s
+
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+    scrape_interval: 5s
+
+  - job_name: "nginx-exporter"
+    static_configs:
+      - targets: ["nginx-exporter:9113"]
+    scrape_interval: 10s
