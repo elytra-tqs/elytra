@@ -93,6 +93,12 @@ services:
     volumes:
       - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager_data:/alertmanager
+    environment:
+      - SMTP_FROM=${SMTP_FROM}
+      - SMTP_AUTH_PASSWORD=${SMTP_AUTH_PASSWORD}
+      - NOTIFICATION_EMAIL=${NOTIFICATION_EMAIL}
+    env_file:
+      - .env
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
       - "--storage.path=/alertmanager"

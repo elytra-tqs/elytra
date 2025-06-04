@@ -1,10 +1,10 @@
 global:
   resolve_timeout: 5m
-  smtp_from: "guilherme.rosa60@gmail.com"
+  smtp_from: "${SMTP_FROM}"
   smtp_smarthost: "smtp.gmail.com:587"
-  smtp_auth_username: "guilherme.rosa60@gmail.com"
-  smtp_auth_password: "xdri mtxk ztjo xeyu"
-  smtp_auth_identity: "guilherme.rosa60@gmail.com"
+  smtp_auth_username: "${SMTP_FROM}"
+  smtp_auth_password: "${SMTP_AUTH_PASSWORD}"
+  smtp_auth_identity: "${SMTP_FROM}"
   smtp_require_tls: true
 
 route:
@@ -23,7 +23,7 @@ route:
 receivers:
   - name: "email-notifications"
     email_configs:
-      - to: "guilherme.rosa60@gmail.com"
+      - to: "${NOTIFICATION_EMAIL}"
         send_resolved: true
         headers:
           subject: "Elytra Alert: {{ .GroupLabels.alertname }}"
