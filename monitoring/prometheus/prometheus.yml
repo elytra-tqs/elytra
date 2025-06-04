@@ -2,15 +2,57 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
 rule_files:
+  - "alert.rules"
 
 scrape_configs:
   - job_name: "prometheus"
     static_configs:
-      - targets: ["localhost:9090"]
-
+      - targets: ["prometheus:9090"]
   - job_name: "stations-management"
     static_configs:
       - targets: ["stations-management:8080"]
     metrics_path: "/actuator/prometheus"
     scrape_interval: 5s
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+    scrape_interval: 5s
+
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+    scrape_interval: 5s
+    metric_relabel_configs:
+      # Map Docker Compose service label to 'service' label
+      - source_labels: ["container_label_com_docker_compose_service"]
+        target_label: "service"
+      # Map container name to 'container' label (remove leading slash)
+      - source_labels: ["name"]
+        regex: "^/(.*)"
+        target_label: "container"
+        replacement: "${1}"
+      # Fallback for names without leading slash
+      - source_labels: ["name"]
+        regex: "^([^/].*)"
+        target_label: "container"
+        replacement: "${1}"
+      # Map instance to node
+      - source_labels: ["instance"]
+        target_label: "node"
+      # Set default service for containers without compose labels
+      - source_labels: ["service"]
+        regex: "^$"
+        target_label: "service"
+        replacement: "no-service"
+
+  - job_name: "nginx-exporter"
+    static_configs:
+      - targets: ["nginx-exporter:9113"]
+    scrape_interval: 10s

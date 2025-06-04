@@ -3,13 +3,43 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
+      - "8082"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
     depends_on:
       - frontend
       - stations-management
+      - grafana
+      - prometheus
+
     networks:
       - elytra
+
+  telegraf:
+    image: telegraf:latest
+    volumes:
+      - ./monitoring/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - nginx_logs:/var/log/nginx:ro
+    depends_on:
+      - nginx
+      - stations-management
+      - frontend
+    networks:
+      - elytra
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    container_name: nginx-exporter
+    ports:
+      - "9113:9113"
+    command:
+      - "-nginx.scrape-uri=http://nginx:80/nginx_status"
+    networks:
+      - elytra
+    restart: unless-stopped
+    depends_on:
+      - nginx
 
   stations-management:
     container_name: stations-management
@@ -37,12 +67,13 @@ services:
       - elytra
 
   prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
     ports:
       - "9090:9090"
+    image: prom/prometheus:latest
+    container_name: prometheus
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alert.rules:/etc/prometheus/alert.rules:ro
       - prometheus_data:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
@@ -54,25 +85,82 @@ services:
     networks:
       - elytra
 
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    networks:
+      - elytra
+
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
     ports:
       - "3000:3000"
+    container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
       - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_USERS_ALLOW_SIGN_UP=false
+
     networks:
       - elytra
+    depends_on:
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    ports:
+      - "9100:9100"
+    networks:
+      - elytra
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    ports:
+      - "8085:8080"
+    container_name: cadvisor
+    command:
+      - "--whitelisted_container_labels=com.docker.compose.service"
+      - "--store_container_labels=false"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    networks:
+      - elytra
+    restart: unless-stopped
 
 volumes:
   prometheus_data:
   grafana_data:
+  nginx_logs:
+  alertmanager_data:
 
 networks:
   elytra:
