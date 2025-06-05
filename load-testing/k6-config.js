@@ -1,4 +1,4 @@
-export { options } from "./scripts/station-load-test.js";
+export { options } from "./scripts/auth-load-test.js";
 
 export const options = {
   ...options,
