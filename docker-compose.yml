@@ -82,6 +82,7 @@ services:
       - "--web.console.templates=/etc/prometheus/consoles"
       - "--storage.tsdb.retention.time=200h"
       - "--web.enable-lifecycle"
+      - "--web.enable-remote-write-receiver"
     networks:
       - elytra
 
@@ -162,11 +163,34 @@ services:
       - elytra
     restart: unless-stopped
 
+  # k6 Load Testing Service (optional profile)
+  k6:
+    image: grafana/k6:latest
+    container_name: k6-load-testing
+    networks:
+      - elytra
+    volumes:
+      - ./load-testing/scripts:/scripts:ro
+      - ./load-testing/results:/results
+    environment:
+      - K6_OUT=experimental-prometheus-rw
+      - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
+      - K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true
+      - K6_PROMETHEUS_RW_PUSH_INTERVAL=5s
+    depends_on:
+      - nginx
+      - stations-management
+      - prometheus
+    profiles:
+      - load-testing
+    command: ["sleep", "infinity"]
+
 volumes:
   prometheus_data:
   grafana_data:
   nginx_logs:
   alertmanager_data:
+  k6_results:
 
 networks:
   elytra:
