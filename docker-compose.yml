@@ -53,6 +53,7 @@ services:
     environment:
       - JAVA_OPTS=-Dspring.devtools.restart.enabled=true -Dspring.devtools.livereload.enabled=true
       - SPRING_PROFILES_ACTIVE=dev
+      - JWT_SECRET=${JWT_SECRET}
     restart: unless-stopped
     networks:
       - elytra

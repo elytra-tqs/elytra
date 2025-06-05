@@ -1,0 +1,81 @@
+@startuml Elytra Stations Management Service - High Level Architecture
+
+!define PRIMARY_COLOR #4A90E2
+!define SECONDARY_COLOR #7ED321
+!define ACCENT_COLOR #F5A623
+!define ERROR_COLOR #D0021B
+
+title Elytra Stations Management Service - High Level Architecture
+
+package "API Layer" PRIMARY_COLOR {
+    [REST Controllers]
+    [Authentication]
+    [Request/Response Handling]
+}
+
+package "Business Logic Layer" SECONDARY_COLOR {
+    [User Management]
+    [Station Operations]
+    [Booking Management]
+    [Security Services]
+}
+
+package "Data Access Layer" ACCENT_COLOR {
+    [JPA Repositories]
+    [Database Entities]
+    [Query Management]
+}
+
+package "Cross-Cutting Concerns" ERROR_COLOR {
+    [Security Configuration]
+    [Exception Handling]
+    [JWT Management]
+}
+
+cloud "External Systems" {
+    [H2 Database]
+    [Spring Security]
+    [Prometheus Metrics]
+}
+
+[REST Controllers] --> [User Management]
+[REST Controllers] --> [Station Operations]
+[REST Controllers] --> [Booking Management]
+[Authentication] --> [Security Services]
+
+[User Management] --> [JPA Repositories]
+[Station Operations] --> [JPA Repositories]
+[Booking Management] --> [JPA Repositories]
+[Security Services] --> [JPA Repositories]
+
+[JPA Repositories] --> [Database Entities]
+[Database Entities] --> [H2 Database]
+
+[Security Configuration] --> [Spring Security]
+[JWT Management] --> [Authentication]
+[Exception Handling] --> [REST Controllers]
+
+[Prometheus Metrics] <-- [Business Logic Layer]
+
+note right of [User Management]
+  Handles three user types:
+  • EV Drivers
+  • Station Operators  
+  • System Admins
+end note
+
+note right of [Station Operations]
+  Manages:
+  • Charging Stations
+  • Charger Status
+  • Availability
+end note
+
+note right of [Booking Management]
+  Features:
+  • Time Slot Booking
+  • Conflict Resolution
+  • Status Tracking
+end note
+
+@enduml
