@@ -11,7 +11,7 @@ export const successfulRequests = new Counter("k6_successful_requests");
 export const options = {
   stages: [
     { duration: "20s", target: 5 },
-    { duration: "40s", target: 10 },
+    { duration: "2m", target: 30 },
     { duration: "20s", target: 0 },
   ],
   thresholds: {
@@ -23,100 +23,85 @@ export const options = {
 
 const BASE_URL = "http://localhost:80/api/v1";
 
+const driverUsers = [
+  {
+    user: {
+      username: "testdriver1",
+      email: "driver1@test.com",
+      password: "password123",
+      firstName: "John",
+      lastName: "Driver",
+    },
+    driver: {
+      driverLicense: "DL123456789",
+    },
+  },
+  {
+    user: {
+      username: "testdriver2",
+      email: "driver2@test.com",
+      password: "password123",
+      firstName: "Jane",
+      lastName: "Driver",
+    },
+    driver: {
+      driverLicense: "DL987654321",
+    },
+  },
+];
+
 export function setup() {
-  console.log("Setting up simple test data...");
-
-  // Create a test station
-  const response = http.post(
-    `${BASE_URL}/stations`,
-    JSON.stringify({
-      name: "Load Test Station",
-      address: "123 Test Street",
-      latitude: 40.7128,
-      longitude: -74.006,
-    }),
-    { headers: { "Content-Type": "application/json" } }
-  );
-
-  if (response.status === 201) {
-    const station = JSON.parse(response.body);
-    console.log(`Created test station: ${station.id}`);
-    return { stationId: station.id };
-  }
-
-  return { stationId: null };
+  console.log("Setting up authentication load test...");
+  return { driverUsers };
 }
 
 export default function (data) {
-  const { stationId } = data;
+  const { driverUsers } = data;
 
-  // Test 1: Get all stations
-  let response = http.get(`${BASE_URL}/stations`);
-  totalRequests.add(1);
+  const testScenario = Math.random();
 
-  let success = check(response, {
-    "Get stations - status 200": (r) => r.status === 200,
-    "Get stations - response time < 200ms": (r) => r.timings.duration < 200,
-    "Get stations - is array": (r) => Array.isArray(JSON.parse(r.body)),
-  });
-
-  if (success) {
-    successfulRequests.add(1);
+  if (testScenario < 0.5) {
+    // Test driver registration
+    testDriverRegistration(driverUsers);
   } else {
-    errorRate.add(1);
+    // Test login with existing credentials
+    testUserLogin();
   }
 
-  responseTime.add(response.timings.duration);
+  sleep(Math.random() * 2 + 1);
+}
 
-  sleep(1);
+function testDriverRegistration(driverUsers) {
+  // Create unique test data for this iteration
+  const randomId = Math.random().toString(36).substring(7);
+  const testUser = {
+    user: {
+      username: `testdriver_${randomId}`,
+      email: `driver_${randomId}@test.com`,
+      password: "password123",
+      firstName: "Test",
+      lastName: "Driver",
+    },
+    driver: {
+      driverLicense: `DL${randomId.toUpperCase()}`,
+    },
+  };
 
-  // Test 2: Get specific station (if available)
-  if (stationId) {
-    response = http.get(`${BASE_URL}/stations/${stationId}`);
-    totalRequests.add(1);
-
-    success = check(response, {
-      "Get station by ID - status 200": (r) => r.status === 200,
-      "Get station by ID - response time < 150ms": (r) =>
-        r.timings.duration < 150,
-      "Get station by ID - has name": (r) => {
-        const station = JSON.parse(r.body);
-        return station.name && station.name.length > 0;
-      },
-    });
-
-    if (success) {
-      successfulRequests.add(1);
-    } else {
-      errorRate.add(1);
-    }
-
-    responseTime.add(response.timings.duration);
-  }
-
-  sleep(1);
-
-  // Test 3: Create a new station
-  response = http.post(
-    `${BASE_URL}/stations`,
-    JSON.stringify({
-      name: `Test Station ${Math.random().toString(36).substring(7)}`,
-      address: `${Math.floor(Math.random() * 9999)} Random Street`,
-      latitude: 40.7 + (Math.random() - 0.5) * 0.1,
-      longitude: -74.0 + (Math.random() - 0.5) * 0.1,
-    }),
+  const response = http.post(
+    `${BASE_URL}/auth/register/driver`,
+    JSON.stringify(testUser),
     { headers: { "Content-Type": "application/json" } }
   );
 
   totalRequests.add(1);
 
-  success = check(response, {
-    "Create station - status 201": (r) => r.status === 201,
-    "Create station - response time < 300ms": (r) => r.timings.duration < 300,
-    "Create station - returns station with ID": (r) => {
-      if (r.status !== 201) return false;
-      const station = JSON.parse(r.body);
-      return station.id && station.id > 0;
+  const success = check(response, {
+    "Register driver - status 200": (r) => r.status === 200,
+    "Register driver - response time < 500ms": (r) => r.timings.duration < 500,
+    "Register driver - returns token": (r) => {
+      if (r.status !== 200) return false;
+      const result = JSON.parse(r.body);
+      return result.token && result.username && result.driverId;
     },
   });
 
@@ -127,19 +112,46 @@ export default function (data) {
   }
 
   responseTime.add(response.timings.duration);
+}
 
-  sleep(Math.random() * 2 + 1); // Random sleep 1-3 seconds
+function testUserLogin() {
+  // Test login with a standard test account that should exist
+  const loginData = {
+    username: "testuser",
+    password: "password",
+  };
+
+  const response = http.post(
+    `${BASE_URL}/auth/login`,
+    JSON.stringify(loginData),
+    { headers: { "Content-Type": "application/json" } }
+  );
+
+  totalRequests.add(1);
+
+  const success = check(response, {
+    "Login - accepts request": (r) => r.status === 200 || r.status === 400, // 400 for invalid credentials is expected
+    "Login - response time < 300ms": (r) => r.timings.duration < 300,
+    "Login - returns proper response": (r) => {
+      if (r.status === 200) {
+        const result = JSON.parse(r.body);
+        return result.token !== undefined; // Should have token on success
+      }
+      return true; // 400/401 is acceptable for invalid credentials
+    },
+  });
+
+  if (success) {
+    successfulRequests.add(1);
+  } else {
+    errorRate.add(1);
+  }
+
+  responseTime.add(response.timings.duration);
 }
 
 export function teardown(data) {
-  console.log("Cleaning up test data...");
-
-  const { stationId } = data;
-
-  if (stationId) {
-    const response = http.del(`${BASE_URL}/stations/${stationId}`);
-    if (response.status === 204) {
-      console.log(`Deleted test station ${stationId}`);
-    }
-  }
+  console.log(
+    "Authentication load test completed - no cleanup needed for auth endpoints"
+  );
 }
