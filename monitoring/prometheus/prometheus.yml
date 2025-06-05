@@ -2,6 +2,8 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+# Remote write reception is enabled via --web.enable-remote-write-receiver flag
+
 alerting:
   alertmanagers:
     - static_configs:
