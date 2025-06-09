@@ -13,6 +13,20 @@ services:
     networks:
       - elytra
 
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-prod
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - elytra
+    restart: unless-stopped
+
   stations-management:
     container_name: stations-management
     build:
@@ -21,7 +35,12 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - JWT_SECRET=${JWT_SECRET}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
     restart: unless-stopped
+    depends_on:
+      - mysql
     networks:
       - elytra
 
@@ -122,6 +141,7 @@ volumes:
   grafana_data:
   nginx_logs:
   alertmanager_data:
+  mysql_data:
 networks:
   elytra:
     driver: bridge

@@ -41,6 +41,22 @@ services:
     depends_on:
       - nginx
 
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=elytra_root
+      - MYSQL_DATABASE=elytra_db
+      - MYSQL_USER=elytra_user
+      - MYSQL_PASSWORD=elytra_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - elytra
+    restart: unless-stopped
+
   stations-management:
     container_name: stations-management
     build:
@@ -54,7 +70,12 @@ services:
       - JAVA_OPTS=-Dspring.devtools.restart.enabled=true -Dspring.devtools.livereload.enabled=true
       - SPRING_PROFILES_ACTIVE=dev
       - JWT_SECRET=${JWT_SECRET}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/elytra_db
+      - SPRING_DATASOURCE_USERNAME=elytra_user
+      - SPRING_DATASOURCE_PASSWORD=elytra_password
     restart: unless-stopped
+    depends_on:
+      - mysql
     networks:
       - elytra
 
@@ -192,6 +213,7 @@ volumes:
   nginx_logs:
   alertmanager_data:
   k6_results:
+  mysql_data:
 
 networks:
   elytra:
